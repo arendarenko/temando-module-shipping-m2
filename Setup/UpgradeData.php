@@ -7,6 +7,7 @@ namespace Temando\Shipping\Setup;
 use Magento\Framework\Setup\ModuleContextInterface;
 use Magento\Framework\Setup\ModuleDataSetupInterface;
 use Magento\Framework\Setup\UpgradeDataInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Init module data
@@ -28,16 +29,23 @@ class UpgradeData implements UpgradeDataInterface
      * @var BookmarkCleaner
      */
     private $bookmarkCleaner;
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
     /**
      * UpgradeData constructor.
-     * @param SetupData $installer
+     *
+     * @param SetupData       $installer
      * @param BookmarkCleaner $bookmarkCleaner
+     * @param LoggerInterface $logger
      */
-    public function __construct(SetupData $installer, BookmarkCleaner $bookmarkCleaner)
+    public function __construct(SetupData $installer, BookmarkCleaner $bookmarkCleaner, LoggerInterface $logger)
     {
         $this->installer = $installer;
         $this->bookmarkCleaner = $bookmarkCleaner;
+        $this->logger = $logger;
     }
 
     /**
@@ -67,10 +75,14 @@ class UpgradeData implements UpgradeDataInterface
         }
 
         if (version_compare($moduleVersion, '1.6.0', '<')) {
-            $this->installer->addPackagingAttributes($setup);
-            $this->installer->updateDimensionAttributes($setup);
-            $this->installer->addInternationalShippingProductAttributes($setup);
-            $this->installer->addMappedProductAttributes($setup);
+            try {
+                $this->installer->addPackagingAttributes($setup);
+                $this->installer->updateDimensionAttributes($setup);
+                $this->installer->addInternationalShippingProductAttributes($setup);
+                $this->installer->addMappedProductAttributes($setup);
+            } catch (\Exception $e) {
+                $this->logger->warning((string)$e, ['module' => 'Temando_Shipping']);
+            }
         }
     }
 }
